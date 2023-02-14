@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  cloudformation_data_source
+
+  This template deploys a Lambda function which will be invoked by CloudFormation templates
+  as a custom resource.
+  It\'s goal is to invoke an AWS API and return the response, queried with JMESPath expression
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: CloudFormation-DataSource
+    Description: "This application invokes AWS API on behalf of a CloudFormation user"
+    Author: Joseph de Clerck
+    SpdxLicenseId: MIT
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
+    Labels: ['tests', 'cloudformation']
+    HomePageUrl: https://github.com/j2clerck/cloudformation-datasource
+    SemanticVersion: 1.0.0
+    SourceCodeUrl: https://github.com/j2clerck/cloudformation-datasource
+
+Parameters:
+  pCheckPermissions:
+    Type: String
+    AllowedValues:
+      - True
+      - False
+    Description: Enable (True) or disable (False) IAM Policy Simulator step when invoking the Lambda. Default is True
+    Default: True
+  
+  pPolicyArn:
+    Type: String
+    Description: ARN of the IAM policy to associate with the Lambda function
+    Default: arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
+
+Resources:
+  CfnDataSource:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_116"
+            comment: "This function does not need a DLQ as it is synchronous invocation"
+          - id: "CKV_AWS_115"
+            comment: "This function can have multiple concurrent execution"
+          - id: "CKV_AWS_117"
+            comment: "This function does not need to run in a VPC"
+          - id: "CKV_AWS_173"
+            comment: "this function does not have secrets in its environment variables"
+    Properties:
+      CodeUri: cloudformation_data_source/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 900
+      Layers:
+        - !Sub arn:aws:lambda:{region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:21
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          POWERTOOLS_SERVICE_NAME: CLOUDFORMATION_DATA_SOURCE
+          PERMISSION_CHECK: !Ref pCheckPermissions
+      Policies:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Ref pPolicyArn
+  
+
+Outputs:
+  CfnDataSource:
+    Description: "CloudFormation data source Lambda ARN"
+    Value: !GetAtt CfnDataSource.Arn
+    Export:
+      Name: CFNDATASOURCE
