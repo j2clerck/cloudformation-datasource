@@ -51,10 +51,10 @@ Resources:
     Properties:
       CodeUri: cloudformation_data_source/
       Handler: app.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.13
       Timeout: 900
       Layers:
-        - !Sub arn:aws:lambda:{region}:017000801446:layer:AWSLambdaPowertoolsPythonV2:21
+        - "{{resolve:ssm:/aws/service/powertools/python/arm64/python3.13/latest}}"
       Architectures:
         - arm64
       Environment:

@@ -2,7 +2,6 @@ import json
 import os
 import time
 from datetime import datetime
-from distutils.util import strtobool
 
 import boto3
 import cfnresponse
@@ -10,6 +9,18 @@ import jmespath
 from aws_lambda_powertools import Logger
 
 logger = Logger()
+
+
+
+def strtobool(value: str) -> bool:
+    """Replacement for distutils.util.strtobool (removed in Python 3.12)."""
+    normalized = value.strip().lower()
+    if normalized in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    if normalized in ("n", "no", "f", "false", "off", "0"):
+        return False
+    raise ValueError(f"invalid truth value {value!r}")
+
 
 PERMISSION_CHECK = strtobool(os.getenv("PERMISSION_CHECK", "True"))
 
